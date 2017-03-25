@@ -13,7 +13,7 @@ object VerticalBoxBlurRunner {
   ) withWarmer new Warmer.Default
 
   def main(args: Array[String]): Unit = {
-    val radius = 3
+    val radius = 5
     val width = 1920
     val height = 1080
     val src = new Img(width, height)
@@ -37,25 +37,37 @@ object VerticalBoxBlurRunner {
 object VerticalBoxBlur {
 
   /** Blurs the columns of the source image `src` into the destination image
-   *  `dst`, starting with `from` and ending with `end` (non-inclusive).
-   *
-   *  Within each column, `blur` traverses the pixels by going from top to
-   *  bottom.
-   */
+    * `dst`, starting with `from` and ending with `end` (non-inclusive).
+    *
+    * Within each column, `blur` traverses the pixels by going from top to
+    * bottom.
+    */
   def blur(src: Img, dst: Img, from: Int, end: Int, radius: Int): Unit = {
-    // TODO implement this method using the `boxBlurKernel` method
-    ???
+    var i = from // column
+    var j = 0 // row
+    while (i < end) {
+      while (j < src.height) {
+        val pixel = boxBlurKernel(src, i, j, radius)
+        dst.update(i, j, pixel)
+        j += 1
+      }
+      j = 0
+      i += 1
+    }
   }
 
   /** Blurs the columns of the source image in parallel using `numTasks` tasks.
-   *
-   *  Parallelization is done by stripping the source image `src` into
-   *  `numTasks` separate strips, where each strip is composed of some number of
-   *  columns.
-   */
+    *
+    * Parallelization is done by stripping the source image `src` into
+    * `numTasks` separate strips, where each strip is composed of some number of
+    * columns.
+    */
   def parBlur(src: Img, dst: Img, numTasks: Int, radius: Int): Unit = {
-    // TODO implement using the `task` construct and the `blur` method
-    ???
+    // use a strip size of 1 if we have more tasks than columns
+    val step = (src.width / numTasks).max(1)
+    val splits = Range(0, src.width, step) :+ src.width
+    val pairs = splits.zip(splits.tail)
+    pairs.map(pair => task(blur(src, dst, pair._1, pair._2, radius))).foreach(_.join())
   }
 
 }
